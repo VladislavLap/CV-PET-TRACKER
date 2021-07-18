@@ -185,7 +185,7 @@ def get_plugin_configs(device, num_streams, num_threads):
 
 
 def draw_detections(frame, detections, palette, labels, threshold, objects):
-    container_support = [17, 18]
+    container_support = [16, 17, 18]
     result_similarity = []
     size = frame.shape[:2]
     for detection in detections:
@@ -207,24 +207,31 @@ def draw_detections(frame, detections, palette, labels, threshold, objects):
             
             if len(objects[str(class_id)]) == 0:
                 objects[str(class_id)].append([(xmin, ymin, xmax, ymax)])
-                continue                
+                continue
             
             for obj in objects[str(class_id)]:
                 c = 1
                 x_min_track, y_min_track, x_max_track, y_max_track = obj[-1]
                 w1 = x_max_track - x_min_track
                 h1 = y_max_track - y_min_track
-                d = math.sqrt(w1 ** 2 + h1 ** 2)
-                result_similarity.append(math.exp(-c * (pow(d, 2) / (w1*h1))))
+                xcenter_track = int((x_max_track + x_min_track)/2)
+                ycenter_track = int((y_max_track + y_min_track)/2)
+                w2 = xmax - xmin
+                h2 = ymax - ymin
+                d = math.sqrt((xcenter - xcenter_track) ** 2 + (ycenter - ycenter_track) ** 2)
+                result_1 = math.exp(-c * (pow(d, 2) / (w1*h1)))
+                result_2 = math.exp(-c * (((w1 - w2) / w1) + ((h1 - h2) / h1)))
+                result_similarity.append(result_1 * result_2)
             
             result_similarity_num = list(enumerate(result_similarity, 0))
             max_probability = max(result_similarity_num, key=lambda i : i[1])
-            if max_probability[1] <= 0.4:
+            if max_probability[1] < 0.4:
                 objects[str(class_id)].append([(xmin, ymin, xmax, ymax)])
             else:
                 objects[str(class_id)][max_probability[0]].append((xmin, ymin, xmax, ymax))
             
-            result_similarity.clear()                
+            result_similarity.clear()
+            result_similarity_num.clear()
                 
             color = palette[class_id]
             det_label = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
@@ -281,7 +288,7 @@ def main():
     presenter = None
     video_writer = cv2.VideoWriter()
     
-    objects_class = {"17": [], "18": []}
+    objects_class = {"16": [], "17": [], "18": []}
 
     while True:
         if detector_pipeline.callback_exceptions:
