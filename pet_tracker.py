@@ -27,8 +27,9 @@ import cv2
 import numpy as np
 from openvino.inference_engine import IECore
 
+sys.path.append(str(Path(__file__).resolve().parents[2] / 'common/python'))
 sys.path.append('C:\Program Files (x86)\Intel\openvino_2021.3.394\deployment_tools\open_model_zoo\demos\common\python')
-
+import math
 import models
 import monitors
 from pipelines import AsyncPipeline
@@ -183,19 +184,54 @@ def get_plugin_configs(device, num_streams, num_threads):
     return config_user_specified
 
 
-def draw_detections(frame, detections, palette, labels, permitted_labels, threshold):
+def draw_detections(frame, detections, palette, labels, threshold, objects):
+    container_support = [17, 18]
+    result_similarity = []
     size = frame.shape[:2]
     for detection in detections:
-        if detection.score > threshold and int(detection.id) in permitted_labels:
+        if detection.score > threshold:
+        
+            class_id = int(detection.id)
+            if class_id not in container_support:
+               continue
+            
             xmin = max(int(detection.xmin), 0)
             ymin = max(int(detection.ymin), 0)
             xmax = min(int(detection.xmax), size[1])
             ymax = min(int(detection.ymax), size[0])
-            class_id = int(detection.id)
+            
+            xcenter = int((xmax + xmin)/2)
+            ycenter = int((ymax + ymin)/2)
+            
+            cv2.circle(frame, (xcenter, ycenter), 5, (0, 255, 255), 2) 
+            
+            if len(objects[str(class_id)]) == 0:
+                objects[str(class_id)].append([(xmin, ymin, xmax, ymax)])
+                continue                
+            
+            for obj in objects[str(class_id)]:
+                c = 1
+                x_min_track, y_min_track, x_max_track, y_max_track = obj[-1]
+                w1 = x_max_track - x_min_track
+                h1 = y_max_track - y_min_track
+                d = math.sqrt(w1 ** 2 + h1 ** 2)
+                result_similarity.append(math.exp(-c * (pow(d, 2) / (w1*h1))))
+            
+            result_similarity_num = list(enumerate(result_similarity, 0))
+            max_probability = max(result_similarity_num, key=lambda i : i[1])
+            if max_probability[1] <= 0.4:
+                objects[str(class_id)].append([(xmin, ymin, xmax, ymax)])
+            else:
+                objects[str(class_id)][max_probability[0]].append((xmin, ymin, xmax, ymax))
+            
+            result_similarity.clear()                
+                
             color = palette[class_id]
             det_label = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
-            cv2.putText(frame, '{} {:.1%}'.format(det_label, detection.score),
+#            cv2.putText(frame, '{} {:.1%}'.format(det_label, detection.score),
+#                        (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+            cv2.putText(frame, str(max_probability[0]),
                         (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
             if isinstance(detection, models.DetectionWithLandmarks):
                 for landmark in detection.landmarks:
@@ -245,9 +281,8 @@ def main():
     presenter = None
     video_writer = cv2.VideoWriter()
     
-    #Add permitted labels for ssd300
-    permitted_labels = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25 ]
-    
+    objects_class = {"17": [], "18": []}
+
     while True:
         if detector_pipeline.callback_exceptions:
             raise detector_pipeline.callback_exceptions[0]
@@ -262,7 +297,7 @@ def main():
                 print_raw_results(frame.shape[:2], objects, model.labels, args.prob_threshold)
 
             presenter.drawGraphs(frame)
-            frame = draw_detections(frame, objects, palette, model.labels, permitted_labels, args.prob_threshold)
+            frame = draw_detections(frame, objects, palette, model.labels, args.prob_threshold, objects_class)
             metrics.update(start_time, frame)
 
             if video_writer.isOpened() and (args.output_limit <= 0 or next_frame_id_to_show <= args.output_limit-1):
@@ -315,7 +350,7 @@ def main():
                 print_raw_results(frame.shape[:2], objects, model.labels, args.prob_threshold)
 
             presenter.drawGraphs(frame)
-            frame = draw_detections(frame, objects, palette, model.labels, permitted_labels, args.prob_threshold)
+            frame = draw_detections(frame, objects, palette, model.labels, args.prob_threshold)
             metrics.update(start_time, frame)
 
             if video_writer.isOpened() and (args.output_limit <= 0 or next_frame_id_to_show <= args.output_limit-1):
