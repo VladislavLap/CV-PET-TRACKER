@@ -203,7 +203,7 @@ def draw_detections(frame, detections, palette, labels, threshold, objects):
             xcenter = int((xmax + xmin)/2)
             ycenter = int((ymax + ymin)/2)
             
-            cv2.circle(frame, (xcenter, ycenter), 5, (0, 255, 255), 2) 
+            #cv2.circle(frame, (xcenter, ycenter), 5, (0, 255, 255), 2) 
             
             if len(objects[str(class_id)]) == 0:
                 objects[str(class_id)].append([(xmin, ymin, xmax, ymax)])
@@ -232,17 +232,28 @@ def draw_detections(frame, detections, palette, labels, threshold, objects):
             
             result_similarity.clear()
             result_similarity_num.clear()
-                
+            
             color = palette[class_id]
             det_label = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
-#            cv2.putText(frame, '{} {:.1%}'.format(det_label, detection.score),
-#                        (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
-            cv2.putText(frame, str(max_probability[0]),
+            cv2.putText(frame, '{} {:.1%} id_track:{}'.format(det_label, detection.score, str(max_probability[0])),
                         (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+            if len(objects[str(class_id)][max_probability[0]]) > 10:
+                objects[str(class_id)][max_probability[0]].pop(0)
             if isinstance(detection, models.DetectionWithLandmarks):
                 for landmark in detection.landmarks:
                     cv2.circle(frame, (int(landmark[0]), int(landmark[1])), 2, (0, 255, 255), 2)
+            
+            for i in range(len(objects[str(class_id)][max_probability[0]])):
+                if(i == len(objects[str(class_id)][max_probability[0]]) - 1):
+                    break
+                x_min_track, y_min_track, x_max_track, y_max_track = objects[str(class_id)][max_probability[0]][i]
+                xcenter_track_begin = int((x_max_track + x_min_track)/2)
+                ycenter_track_begin = int((y_max_track + y_min_track)/2)
+                x_min_track, y_min_track, x_max_track, y_max_track = objects[str(class_id)][max_probability[0]][i + 1]
+                xcenter_track_end = int((x_max_track + x_min_track)/2)
+                ycenter_track_end = int((y_max_track + y_min_track)/2)
+                cv2.line(frame, (xcenter_track_begin,ycenter_track_begin), (xcenter_track_end,ycenter_track_end), color, 10)
     return frame
 
 
