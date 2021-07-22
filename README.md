@@ -41,9 +41,87 @@
 
 ## Пример работы
 
+![](https://media.giphy.com/media/Qu8kmpwQq6CPxjhJXl/giphy.gif)
+
+![](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
+
+![](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
+
 ![](result/dog-cat.jpg)
 
 ![](result/bird.jpg)
+
+## Как работает программа
+При запуске программы считываются параметры командной строки, происходит загрузка модели и входного изображения в Inference Engine.
+
+## Запуск
+Запустите программу с параметром `-h` или `--help`, чтобы увидеть сообщение о возможных вариантах запуска программы.
+
+```
+usage: pet_tracker.py [-h] -m MODEL -at {ssd,yolo,yolov4,faceboxes,centernet,ctpn,retinaface} -i INPUT [-d DEVICE]
+                      [--labels LABELS] [-t PROB_THRESHOLD] [--keep_aspect_ratio] [--input_size INPUT_SIZE INPUT_SIZE]
+                      [-nireq NUM_INFER_REQUESTS] [-nstreams NUM_STREAMS] [-nthreads NUM_THREADS] [--loop] [-o OUTPUT]
+                      [-limit OUTPUT_LIMIT] [--no_show] [-u UTILIZATION_MONITORS] [-r]
+
+Options:
+  -h, --help            Show this help message and exit.
+  -m MODEL, --model MODEL
+                        Required. Path to an .xml file with a trained model.
+  -at {ssd,yolo,yolov4,faceboxes,centernet,ctpn,retinaface}, --architecture_type {ssd,yolo,yolov4,faceboxes,centernet,ctpn,retinaface}
+                        Required. Specify model' architecture type.
+  -i INPUT, --input INPUT
+                        Required. An input to process. The input must be a single image, a folder of images, video
+                        file or camera id.
+  -d DEVICE, --device DEVICE
+                        Optional. Specify the target device to infer on; CPU, GPU, FPGA, HDDL or MYRIAD is acceptable.
+                        The sample will look for a suitable plugin for device specified. Default value is CPU.
+
+Common model options:
+  --labels LABELS       Optional. Labels mapping file.
+  -t PROB_THRESHOLD, --prob_threshold PROB_THRESHOLD
+                        Optional. Probability threshold for detections filtering.
+  --keep_aspect_ratio   Optional. Keeps aspect ratio on resize.
+  --input_size INPUT_SIZE INPUT_SIZE
+                        Optional. The first image size used for CTPN model reshaping. Default: 600 600. Note that
+                        submitted images should have the same resolution, otherwise predictions might be incorrect.
+
+Inference options:
+  -nireq NUM_INFER_REQUESTS, --num_infer_requests NUM_INFER_REQUESTS
+                        Optional. Number of infer requests
+  -nstreams NUM_STREAMS, --num_streams NUM_STREAMS
+                        Optional. Number of streams to use for inference on the CPU or/and GPU in throughput mode (for
+                        HETERO and MULTI device cases use format <device1>:<nstreams1>,<device2>:<nstreams2> or just
+                        <nstreams>).
+  -nthreads NUM_THREADS, --num_threads NUM_THREADS
+                        Optional. Number of threads to use for inference on CPU (including HETERO cases).
+
+Input/output options:
+  --loop                Optional. Enable reading the input in a loop.
+  -o OUTPUT, --output OUTPUT
+                        Optional. Name of output to save.
+  -limit OUTPUT_LIMIT, --output_limit OUTPUT_LIMIT
+                        Optional. Number of frames to store in output. If 0 is set, all frames are stored.
+  --no_show             Optional. Don't show output.
+  -u UTILIZATION_MONITORS, --utilization_monitors UTILIZATION_MONITORS
+                        Optional. List of monitors to show initially.
+
+Debug options:
+  -r, --raw_output_message
+                        Optional. Output inference results raw values showing.
+                        
+                        
+```
+При запуске программы с пустым списком параметров появляется сообщение об ошибке.
+
+Например, можно использовать следующие команды для запуска программы через командную строку:
+
+```
+python pet_tracker.py -i <path_to_image> ^
+                       -m <path_to_model> ^
+                       -at ssd ^
+                       --loop
+```
+> **Замечание:** Данный репозиторий содержит папку `models`, где можно найти поддерживаемые приложением модели в формате IR.
 
 ## Технические характеристики
 
