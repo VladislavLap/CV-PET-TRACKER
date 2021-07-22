@@ -38,6 +38,7 @@ from pipelines import AsyncPipeline
 from images_capture import open_images_capture
 from performance_metrics import PerformanceMetrics
 from copy import deepcopy
+from munkres import Munkres
 
 logging.basicConfig(format='[ %(levelname)s ] %(message)s', level=logging.INFO, stream=sys.stdout)
 log = logging.getLogger()
@@ -192,8 +193,8 @@ def find_palette(name_animal):
     return animal_id[name_animal]
 
 
-def find_track(detection, container_support, objects, threshold, size):  
-    result_similarity = []
+def find_track(detection, container_support, objects, result_similarity, threshold, size):  
+    tmp = []
     xmin = max(int(detection.xmin), 0)
     ymin = max(int(detection.ymin), 0)
     xmax = min(int(detection.xmax), size[1])
@@ -219,30 +220,22 @@ def find_track(detection, container_support, objects, threshold, size):
         
         result_1 = math.exp(-c * (pow(d, 2) / (w1*h1)))
         result_2 = math.exp(-c * (((w1 - w2) / w1) + ((h1 - h2) / h1)))
-        result_similarity.append(result_1 * result_2)
-        
-    result_similarity_num = list(enumerate(result_similarity, 0))
-    max_probability = max(result_similarity_num, key=lambda i : i[1])
-    
-    if max_probability[1] < threshold:
-        objects.append([deepcopy(container_support), (xmin, ymin, xmax, ymax)])
-    else:
-        objects[max_probability[0]].append((xmin, ymin, xmax, ymax))
-        
-    return max_probability
+        tmp.append(result_1 * result_2)
+    result_similarity.append(tmp)
+
 
 
 def draw_track(frame, objects, name_animal, max_probability, color):
-    for i in range(1, len(objects[max_probability[0]])):
-        if(i == len(objects[max_probability[0]]) - 1):
+    for i in range(1, len(objects[max_probability])):
+        if(i == len(objects[max_probability]) - 1):
             break
         
-        x_min_track, y_min_track, x_max_track, y_max_track = objects[max_probability[0]][i]
+        x_min_track, y_min_track, x_max_track, y_max_track = objects[max_probability][i]
         
         xcenter_track_begin = int((x_max_track + x_min_track)/2)
         ycenter_track_begin = int((y_max_track + y_min_track)/2)
         
-        x_min_track, y_min_track, x_max_track, y_max_track = objects[max_probability[0]][i + 1]
+        x_min_track, y_min_track, x_max_track, y_max_track = objects[max_probability][i + 1]
         
         xcenter_track_end = int((x_max_track + x_min_track)/2)
         ycenter_track_end = int((y_max_track + y_min_track)/2)
@@ -250,54 +243,113 @@ def draw_track(frame, objects, name_animal, max_probability, color):
         cv2.line(frame, (xcenter_track_begin,ycenter_track_begin), (xcenter_track_end,ycenter_track_end), color, 10)
 
 
+def to_similarity_matrix(result_similarity, right_detection, objects):
+    tmp = []
+    for i in range(len(objects)):
+        tmp.append([0] * len(right_detection))
+    
+    for i in range(len(objects)):
+        for j in range(len(right_detection)):
+            tmp[i][j] = result_similarity[j][i]   
+    return tmp
+
+
+def munkres(similarity_matrix):
+    cost_matrix = []
+    for row in similarity_matrix:
+        cost_row = []
+        for col in row:
+            cost_row += [sys.maxsize - col]
+        cost_matrix += [cost_row]
+    m = Munkres()
+    indexes = m.compute(cost_matrix)
+    return indexes
+
+
 def draw_detections(frame, detections, palette, labels, threshold, objects):
+    result_indexes = []
+    similarity_matrix = []
+    result_similarity = []
+    right_detection = []
     container_support = {"bird": 0, "cat": 0, "dog": 0}
     size = frame.shape[:2]
     for detection in detections:
         if detection.score > threshold:
-            
             class_id = int(detection.id)
             name_animal = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
             if name_animal not in container_support:
                continue
-            
+            right_detection.append(detection)  
+    
+    if len(right_detection) == 0:
+        return frame
+    
+    #При первом вхождении
+    if len(objects) == 0:
+        i = 0
+        for detection in right_detection:
+            class_id = int(detection.id)
+            name_animal = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
             xmin = max(int(detection.xmin), 0)
             ymin = max(int(detection.ymin), 0)
             xmax = min(int(detection.xmax), size[1])
             ymax = min(int(detection.ymax), size[0])
-            
-            if len(objects) == 0:
-                objects.append([deepcopy(container_support), (xmin, ymin, xmax, ymax)])
-                continue
-            
-            # trajectory search
-            max_probability = find_track(detection, container_support, objects, threshold, size)
-            
-            key_animal = name_animal
-            max_animal = 0
-            for key, value in objects[max_probability[0]][0].items():
-                if value > max_animal:
-                    max_animal = value
-                    key_animal = key
-            
-            color = palette[find_palette(key_animal)]
-            
+            objects.append([deepcopy(container_support), (xmin, ymin, xmax, ymax)])
+            objects[i][0][name_animal] += 1
+            color = palette[find_palette(name_animal)]
             cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
-            cv2.putText(frame, '{} {:.1%} id_track:{}'.format(key_animal, detection.score, str(max_probability[0])),
-                        (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+            cv2.putText(frame, '{} {:.1%} id_track:{}'.format(name_animal, detection.score, str(i)),
+                    (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
+            draw_track(frame, objects, name_animal, i, color)
+            i += 1
+        right_detection.clear()
+        return frame
+    
+    # trajectory search
+    for detection in right_detection:
+        find_track(detection, container_support, objects, result_similarity, threshold, size)
+    
+    similarity_matrix = to_similarity_matrix(result_similarity, right_detection, objects)
+    result_indexes = munkres(similarity_matrix)
+    
+    for index in result_indexes:
+        detection = right_detection[index[1]]
+        class_id = int(detection.id)
+        name_animal = labels[class_id] if labels and len(labels) >= class_id else '#{}'.format(class_id)
+        
+        xmin = max(int(detection.xmin), 0)
+        ymin = max(int(detection.ymin), 0)
+        xmax = min(int(detection.xmax), size[1])
+        ymax = min(int(detection.ymax), size[0])
+        
+        if similarity_matrix[index[0]][index[1]] < threshold:
+            objects.append([deepcopy(container_support), (xmin, ymin, xmax, ymax)])
+        else:
+            objects[index[0]].append((xmin, ymin, xmax, ymax))
+            objects[index[0]][0][name_animal] += 1 
+        key_animal = name_animal
+        max_animal = 0
+        for key, value in objects[index[0]][0].items():
+            if value > max_animal:
+                max_animal = value
+                key_animal = key
+    
+        color = palette[find_palette(key_animal)]
+    
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
+        cv2.putText(frame, '{} {:.1%} id_track:{}'.format(key_animal, detection.score, str(index[0])),
+                    (xmin, ymin - 7), cv2.FONT_HERSHEY_COMPLEX, 0.6, color, 1)
 
-            if len(objects[max_probability[0]]) > 10:
-                objects[max_probability[0]].pop(1)
-            
-            objects[max_probability[0]][0][name_animal] += 1
-            
-            if isinstance(detection, models.DetectionWithLandmarks):
-                for landmark in detection.landmarks:
-                    cv2.circle(frame, (int(landmark[0]), int(landmark[1])), 2, (0, 255, 255), 2)
-            
-            # drawing trajectories
-            draw_track(frame, objects, name_animal, max_probability, color)
-            
+        if len(objects[index[0]]) > 10:
+            objects[index[0]].pop(1)
+
+        if isinstance(detection, models.DetectionWithLandmarks):
+            for landmark in detection.landmarks:
+                cv2.circle(frame, (int(landmark[0]), int(landmark[1])), 2, (0, 255, 255), 2)
+    
+        # drawing trajectories
+        draw_track(frame, objects, name_animal, index[0], color)
+    log.info(objects)        
     return frame
 
 
