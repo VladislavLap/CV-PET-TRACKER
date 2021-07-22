@@ -41,15 +41,15 @@
 
 ## Пример работы
 
-![](https://media.giphy.com/media/Qu8kmpwQq6CPxjhJXl/giphy.gif)
-
-![](result/dog-cat.jpg)
+![](https://media.giphy.com/media/T1nkdwFaAd8S8vBhak/giphy.gif)
 
 ![](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
 
-![](result/bird.jpg)
+![](https://media.giphy.com/media/YxMRhyHYwUK3NBr9Jv/giphy.gif)
 
-![](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
+![](result/dog-cat.jpg)
+
+![](result/bird.jpg)
 
 ## Как работает программа
 При запуске программы считываются параметры командной строки, происходит загрузка модели и входного изображения в Inference Engine.
