@@ -43,13 +43,13 @@
 
 ![](https://media.giphy.com/media/zvqDwRSBoHa30Ls3nT/giphy.gif)
 
-![](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
-
-![](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
-
 ![](result/dog-cat.jpg)
 
+![](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
+
 ![](result/bird.jpg)
+
+![](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
 
 ## Как работает программа
 При запуске программы считываются параметры командной строки, происходит загрузка модели и входного изображения в Inference Engine.
