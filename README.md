@@ -41,12 +41,18 @@
 
 ## Пример работы
 
+![dog-cat](https://media.giphy.com/media/zvqDwRSBoHa30Ls3nT/giphy.gif)
+
+![one-bird](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
+
+![one-cat](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
+
 ![](result/dog-cat.jpg)
 
 ![](result/bird.jpg)
 
 ## Как работает программа
-При запуске программы считываются параметры командной строки, происходит загрузка модели и входного изобрображения в Inference Engine.
+При запуске программы считываются параметры командной строки, происходит загрузка модели и входного изображения в Inference Engine.
 
 ## Запуск
 Запустите программу с параметром `-h` или `--help`, чтобы увидеть сообщение о возможных вариантах запуска программы.
