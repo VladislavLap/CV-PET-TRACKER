@@ -41,11 +41,11 @@
 
 ## Пример работы
 
-![dog-cat](https://media.giphy.com/media/zvqDwRSBoHa30Ls3nT/giphy.gif)
+![](https://media.giphy.com/media/zvqDwRSBoHa30Ls3nT/giphy.gif)
 
-![one-bird](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
+![](https://media.giphy.com/media/V88sO11VsQAuS4c5KI/giphy.gif)
 
-![one-cat](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
+![](https://media.giphy.com/media/V7cW5cKLIWvd88mjE3/giphy.gif)
 
 ![](result/dog-cat.jpg)
 
