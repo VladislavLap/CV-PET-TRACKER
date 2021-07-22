@@ -41,7 +41,7 @@
 
 ## Пример работы
 
-![](https://media.giphy.com/media/zvqDwRSBoHa30Ls3nT/giphy.gif)
+![](https://media.giphy.com/media/Qu8kmpwQq6CPxjhJXl/giphy.gif)
 
 ![](result/dog-cat.jpg)
 
